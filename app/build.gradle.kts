@@ -94,7 +94,8 @@ dependencies {
 
     implementation("androidx.compose.material3:material3:1.3.1")
 
-// latest stable M3
+    implementation("androidx.compose.material:material-icons-extended:1.5.0")
+
 
 
 }

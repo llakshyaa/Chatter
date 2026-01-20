@@ -8,6 +8,10 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Chat
+import androidx.compose.material.icons.filled.Chat
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -22,6 +26,9 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.chatter.ui.theme.DarkGray
 import java.util.*
+
+
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -81,11 +88,12 @@ fun SearchScreen(
         }
     }
 }
-
 @Composable
 fun UserSearchItem(
     user: UserSearchResult,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    viewModel: SearchViewModel = hiltViewModel(),
+    onMessageClick: (String) -> Unit = {}
 ) {
     Row(
         modifier = Modifier
@@ -94,36 +102,78 @@ fun UserSearchItem(
             .clip(RoundedCornerShape(16.dp))
             .background(DarkGray)
             .clickable { onClick() },
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween // <-- space between name and icon
     ) {
 
-        Box(
-            modifier = Modifier
-                .size(48.dp)
-                .clip(CircleShape)
-                .background(Color.Blue.copy(alpha = 0.4f)),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = user.name.firstOrNull()?.uppercase(Locale.getDefault()) ?: "?",
-                color = Color.White,
-                fontWeight = FontWeight.Bold
-            )
+        // ---- Left: Avatar and Names ----
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(CircleShape)
+                    .background(Color.Blue.copy(alpha = 0.4f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = user.name.firstOrNull()?.uppercase(Locale.getDefault()) ?: "?",
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+
+            Column(
+                modifier = Modifier.padding(start = 12.dp)
+            ) {
+                Text(
+                    text = user.name,
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = "@${user.username}",
+                    color = Color.Gray,
+                    fontSize = 13.sp
+                )
+            }
         }
 
-        Column(
-            modifier = Modifier.padding(start = 12.dp)
-        ) {
-            Text(
-                text = user.name,
-                color = Color.White,
-                fontWeight = FontWeight.Bold
-            )
-            Text(
-                text = "@${user.username}",
-                color = Color.Gray,
-                fontSize = 13.sp
-            )
+        // ---- Right: Friend Action Icon ----
+        when (user.friendState) {
+            FriendState.NONE -> {
+                IconButton(
+                    onClick = { viewModel.sendFriendRequest(user.uid) }
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.PersonAdd,
+                        contentDescription = "Add Friend",
+                        tint = Color.White
+                    )
+                }
+            }
+            FriendState.REQUEST_SENT -> {
+                IconButton(
+                    onClick = { viewModel.cancelFriendRequest(user.uid) }
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = "Cancel Request",
+                        tint = Color.White
+                    )
+                }
+            }
+            FriendState.FRIENDS -> {
+                IconButton(
+                    onClick = { viewModel.openChat(user.uid, onMessageClick) }
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Chat,
+                        contentDescription = "Message",
+                        tint = Color.White
+                    )
+                }
+            }
+            else -> {}
         }
     }
 }
