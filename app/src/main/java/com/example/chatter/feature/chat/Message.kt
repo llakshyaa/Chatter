@@ -1,16 +1,10 @@
 package com.example.chatter.feature.chat
 
-data class Message(
-    val id: String ="",
-   val text: String ="",
-    val senderId: String ="",
-//    val receiverId: String="",
-    val createdAt: Long = System.currentTimeMillis(),
+import com.google.firebase.Timestamp
 
-    val senderName: String="",
-    val senderImage: String?="",
-    val imageUrl: String?=""
-
-
-
+data class ChatMessage(
+    val id: String = "",
+    val senderId: String = "",
+    val text: String = "",
+    val timestamp: Timestamp? = null
 )

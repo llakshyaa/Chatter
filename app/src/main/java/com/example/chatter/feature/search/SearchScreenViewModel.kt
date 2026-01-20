@@ -31,37 +31,62 @@ class SearchViewModel @Inject constructor(
         }
 
         val text = query.lowercase().trim()
+        val myUid = myId
+        if (myUid.isEmpty()) return
 
-        db.collection("users")
-            .orderBy("username")
-            .startAt(text)
-            .endAt(text + "\uf8ff")
-            .limit(20)
+        // 1️⃣ First fetch MY USER document (source of truth)
+        db.collection("users").document(myUid)
             .get()
-            .addOnSuccessListener { snapshot ->
-                val results = snapshot.documents.mapNotNull { doc ->
-                    val uid = doc.getString("uid") ?: return@mapNotNull null
-                    val requestsSent = doc.get("requestsSent") as? List<String> ?: emptyList()
-                    val requestsReceived = doc.get("requestsReceived") as? List<String> ?: emptyList()
-                    val friends = doc.get("friends") as? List<String> ?: emptyList()
+            .addOnSuccessListener { myDoc ->
 
-                    // Determine friend state relative to current user
-                    val state = when {
-                        friends.contains(myId) -> FriendState.FRIENDS
-                        requestsReceived.contains(myId) -> FriendState.REQUEST_RECEIVED
-                        requestsSent.contains(myId) -> FriendState.REQUEST_SENT
-                        else -> FriendState.NONE
+                val myRequestsSent =
+                    myDoc.get("requestsSent") as? List<String> ?: emptyList()
+                val myRequestsReceived =
+                    myDoc.get("requestsReceived") as? List<String> ?: emptyList()
+                val myFriends =
+                    myDoc.get("friends") as? List<String> ?: emptyList()
+
+                // 2️⃣ Now search OTHER users
+                db.collection("users")
+                    .orderBy("username")
+                    .startAt(text)
+                    .endAt(text + "\uf8ff")
+                    .limit(20)
+                    .get()
+                    .addOnSuccessListener { snapshot ->
+
+                        val results = snapshot.documents.mapNotNull { doc ->
+                            val uid = doc.getString("uid") ?: return@mapNotNull null
+
+                            // ❌ Skip myself
+                            if (uid == myUid) return@mapNotNull null
+
+                            // 3️⃣ Determine friend state (CORRECT)
+                            val state = when {
+                                myFriends.contains(uid) ->
+                                    FriendState.FRIENDS
+
+                                myRequestsReceived.contains(uid) ->
+                                    FriendState.REQUEST_RECEIVED
+
+                                myRequestsSent.contains(uid) ->
+                                    FriendState.REQUEST_SENT
+
+                                else ->
+                                    FriendState.NONE
+                            }
+
+                            UserSearchResult(
+                                uid = uid,
+                                name = doc.getString("name") ?: "",
+                                username = doc.getString("username") ?: "",
+                                email = doc.getString("email") ?: "",
+                                friendState = state
+                            )
+                        }
+
+                        _users.value = results
                     }
-
-                    UserSearchResult(
-                        uid = uid,
-                        name = doc.getString("name") ?: "",
-                        username = doc.getString("username") ?: "",
-                        email = doc.getString("email") ?: "",
-                        friendState = state
-                    )
-                }
-                _users.value = results
             }
     }
 
@@ -90,21 +115,21 @@ class SearchViewModel @Inject constructor(
     }
 
     /** ACCEPT FRIEND REQUEST */
-    fun acceptFriendRequest(targetUid: String) {
-        // Remove from requests arrays
-        db.collection("users").document(myId)
-            .update("requestsReceived", FieldValue.arrayRemove(targetUid))
-        db.collection("users").document(targetUid)
-            .update("requestsSent", FieldValue.arrayRemove(myId))
-
-        // Add to friends array
-        db.collection("users").document(myId)
-            .update("friends", FieldValue.arrayUnion(targetUid))
-        db.collection("users").document(targetUid)
-            .update("friends", FieldValue.arrayUnion(myId))
-
-        updateUserState(targetUid, FriendState.FRIENDS)
-    }
+//    fun acceptFriendRequest(targetUid: String) {
+//        // Remove from requests arrays
+//        db.collection("users").document(myId)
+//            .update("requestsReceived", FieldValue.arrayRemove(targetUid))
+//        db.collection("users").document(targetUid)
+//            .update("requestsSent", FieldValue.arrayRemove(myId))
+//
+//        // Add to friends array
+//        db.collection("users").document(myId)
+//            .update("friends", FieldValue.arrayUnion(targetUid))
+//        db.collection("users").document(targetUid)
+//            .update("friends", FieldValue.arrayUnion(myId))
+//
+//        updateUserState(targetUid, FriendState.FRIENDS)
+//    }
 
     /** OPEN CHAT WITH FRIEND */
     fun openChat(targetUid: String, onNavigate: (String) -> Unit) {

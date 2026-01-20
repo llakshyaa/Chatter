@@ -14,143 +14,117 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
-import com.example.chatter.feature.navigation.BottomNavItem
 import com.example.chatter.ui.theme.DarkGray
 import java.util.*
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(navHostController: NavHostController) {
 
-    val viewModel = hiltViewModel<HomeViewModel>()
-    val channels by viewModel.channels.collectAsState(initial = emptyList())
-    var selectedIndex by remember { mutableIntStateOf(0) }
-
-//    val navItems = listOf(
-//        BottomNavItem.Home,
-//        BottomNavItem.Search,
-//        BottomNavItem.Notifications,
-//        BottomNavItem.Profile
-//    )
+    val viewModel: HomeViewModel = hiltViewModel()
+    val friends by viewModel.friends.collectAsState()
 
     LaunchedEffect(Unit) {
-        viewModel.fetchUserChannels()
+        viewModel.observeFriends()
     }
-    //
-//    Scaffold(
-//        containerColor = Color.Black,
-//        bottomBar = {
-//            NavigationBar(containerColor = DarkGray) {
-//                navItems.forEachIndexed { index, item ->
-//                    NavigationBarItem(
-//                        selected = selectedIndex == index,
-//                        onClick = { selectedIndex = index },
-//                        icon = {
-//                            Icon(
-//                                imageVector = item.icon,
-//                                contentDescription = item.label
-//                            )
-//                        },
-//                        label = { Text(item.label) },
-//                        colors = NavigationBarItemDefaults.colors(
-//                            selectedIconColor = Color.White,
-//                            unselectedIconColor = Color.Gray,
-//                            selectedTextColor = Color.White,
-//                            unselectedTextColor = Color.Gray,
-//                            indicatorColor = Color.Transparent
-//                        )
-//                    )
-//                }
-//            }
-//        }
-//    ) { paddingValues ->
-//
-//        Box(
-//            modifier = Modifier
-//                .padding(paddingValues)
-//                .fillMaxSize()
-//        ) {
-//
-//            when (navItems[selectedIndex]) {
-//
-//                BottomNavItem.Home -> {
-//                    LazyColumn {
-//                        item {
-//                            Text(
-//                                text = "Messages",
-//                                color = Color.White,
-//                                fontSize = 24.sp,
-//                                fontWeight = FontWeight.Bold,
-//                                modifier = Modifier.padding(16.dp)
-//                            )
-//                        }
-//
-//                        items(channels) { channel ->
-//                            ChannelItem(
-//                                channelName = channel.name,
-//                                onClick = {
-//                                    navHostController.navigate("chat/${channel.id}")
-//                                }
-//                            )
-//                        }
-//                    }
-//                }
-//
-//                BottomNavItem.Search -> CenterScreen("Search Screen")
-//                BottomNavItem.Notifications -> CenterScreen("Notifications Screen")
-//                BottomNavItem.Profile -> CenterScreen("Profile Screen")
-//            }
-//        }
-//    }
-//}
-    @Composable
-    fun ChannelItem(channelName: String, onClick: () -> Unit) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 4.dp)
-                .clip(RoundedCornerShape(16.dp))
-                .background(DarkGray)
-                .clickable { onClick() },
-            verticalAlignment = Alignment.CenterVertically
-        ) {
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black)
+    ) {
+
+        // 🔹 Header
+        Text(
+            text = "Messages",
+            color = Color.White,
+            fontSize = 24.sp,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(16.dp)
+        )
+
+        // 🔹 Friends / Chats list
+        if (friends.isEmpty()) {
             Box(
-                modifier = Modifier
-                    .padding(16.dp)
-                    .size(60.dp)
-                    .clip(CircleShape)
-                    .background(Color.Yellow.copy(alpha = 0.3f))
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = channelName.firstOrNull()?.uppercase(Locale.getDefault()) ?: "?",
-                    fontSize = 30.sp,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.align(Alignment.Center),
-                    color = Color.White,
-                    textAlign = TextAlign.Center
+                    text = "No chats yet",
+                    color = Color.Gray
                 )
             }
-
-            Text(
-                text = channelName,
-                color = Color.White,
-                modifier = Modifier.padding(8.dp)
-            )
+        } else {
+            LazyColumn {
+                items(friends) { friend ->
+                    ChatItem(
+                        friend = friend,
+                        onClick = {
+                            val encodedName = java.net.URLEncoder.encode(friend.name, "UTF-8")
+                            navHostController.navigate("chat/${friend.chatId}/$encodedName")
+                        }
+                    )
+                }
+            }
         }
     }
+}
+@Composable
+fun ChatItem(
+    friend: FriendUiModel,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 6.dp)
+            .clip(RoundedCornerShape(16.dp))
+            .background(DarkGray)
+            .clickable { onClick() },
+        verticalAlignment = Alignment.CenterVertically
+    ) {
 
-    @Composable
-    fun CenterScreen(text: String) {
+        // 🟡 Avatar
         Box(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .padding(12.dp)
+                .size(56.dp)
+                .clip(CircleShape)
+                .background(Color.Yellow.copy(alpha = 0.3f)),
             contentAlignment = Alignment.Center
         ) {
-            Text(text = text, color = Color.White, fontSize = 18.sp)
+            Text(
+                text = friend.name.firstOrNull()?.uppercase(Locale.getDefault()) ?: "?",
+                color = Color.White,
+                fontSize = 26.sp,
+                fontWeight = FontWeight.Bold
+            )
+        }
+
+        // 🟢 Name + last message
+        Column(
+            modifier = Modifier
+                .padding(end = 12.dp)
+                .weight(1f)
+        ) {
+            Text(
+                text = friend.name,
+                color = Color.White,
+                fontWeight = FontWeight.Bold,
+                fontSize = 16.sp
+            )
+
+            Spacer(modifier = Modifier.height(2.dp))
+
+            Text(
+                text = friend.lastMessage.ifBlank { "Say hi 👋" },
+                color = Color.Gray,
+                fontSize = 13.sp,
+                maxLines = 1
+            )
         }
     }
 }

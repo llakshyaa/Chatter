@@ -10,6 +10,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Chat
 import androidx.compose.material.icons.filled.Chat
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.Search
@@ -140,40 +141,36 @@ fun UserSearchItem(
 
         // ---- Right: Friend Action Icon ----
         when (user.friendState) {
+
             FriendState.NONE -> {
-                IconButton(
-                    onClick = { viewModel.sendFriendRequest(user.uid) }
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.PersonAdd,
-                        contentDescription = "Add Friend",
-                        tint = Color.White
-                    )
+                IconButton(onClick = { viewModel.sendFriendRequest(user.uid) }) {
+                    Icon(Icons.Default.PersonAdd, "Add Friend", tint = Color.White)
                 }
             }
+
             FriendState.REQUEST_SENT -> {
-                IconButton(
-                    onClick = { viewModel.cancelFriendRequest(user.uid) }
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Close,
-                        contentDescription = "Cancel Request",
-                        tint = Color.White
-                    )
+                IconButton(onClick = { viewModel.cancelFriendRequest(user.uid) }) {
+                    Icon(Icons.Default.Close, "Cancel Request", tint = Color.White)
                 }
             }
+
+            FriendState.REQUEST_RECEIVED -> {
+                Text(
+                    text = "Request received",
+                    color = Color.Gray,
+                    fontSize = 12.sp,
+                    modifier = Modifier.padding(end = 8.dp)
+                )
+            }
+
             FriendState.FRIENDS -> {
                 IconButton(
                     onClick = { viewModel.openChat(user.uid, onMessageClick) }
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Chat,
-                        contentDescription = "Message",
-                        tint = Color.White
-                    )
+                    Icon(Icons.Default.Chat, "Message", tint = Color.White)
                 }
             }
-            else -> {}
         }
+
     }
-}
+    }

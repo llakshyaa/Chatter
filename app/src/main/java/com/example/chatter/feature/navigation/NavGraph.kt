@@ -7,6 +7,7 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import com.example.chatter.feature.chat.ChatScreen
 import com.example.chatter.feature.home.HomeScreen
 import com.example.chatter.feature.navigation.BottomNavItem
 import com.example.chatter.feature.notification.NotificationScreen
@@ -38,6 +39,18 @@ fun AppNavGraph(
 
         composable(BottomNavItem.Profile.route) {
             ProfileScreen(navController)  // ✅ FIX
+        }
+        composable(
+            route = "chat/{chatId}/{friendName}"
+        ) { backStackEntry ->
+            val chatId = backStackEntry.arguments?.getString("chatId") ?: ""
+            val friendName = backStackEntry.arguments?.getString("friendName") ?: ""
+
+            ChatScreen(
+                navHostController = navController,
+                chatId = chatId,
+                friendName = friendName
+            )
         }
     }
 }

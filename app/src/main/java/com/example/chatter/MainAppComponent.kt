@@ -43,14 +43,21 @@ fun MainApp() {
 
             // CHAT SCREEN (full screen, no bottom nav)
             composable(
-                route = "chat/{channelId}",
+                route = "chat/{chatId}/{friendName}",
                 arguments = listOf(
-                    navArgument("channelId") { type = NavType.StringType }
+                    navArgument("chatId") { type = NavType.StringType },
+                    navArgument("friendName") { type = NavType.StringType }
                 )
             ) { backStackEntry ->
-                val channelId = backStackEntry.arguments?.getString("channelId") ?: ""
-                ChatScreen(rootNavController, channelId)
+                val chatId = backStackEntry.arguments?.getString("chatId") ?: ""
+                val friendName = backStackEntry.arguments?.getString("friendName") ?: "Friend"
+                ChatScreen(
+                    navHostController = rootNavController,
+                    chatId = chatId,
+                    friendName = friendName
+                )
             }
+
         }
     }
 }
