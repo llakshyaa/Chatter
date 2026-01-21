@@ -33,7 +33,7 @@ fun SignUpScreen(navController: NavHostController) {
 
     LaunchedEffect(uiState) {
         if (uiState is SignUpState.Success) {
-            navController.navigate("homescreen") {
+            navController.navigate("main") {
                 popUpTo("signup") { inclusive = true }
             }
         }
